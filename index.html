@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>For You ❤️</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body {
+  background: linear-gradient(135deg,#ffd6e8,#ffe9f3,#ffc0cb);
+  overflow:hidden;
+}
+
+/* floating hearts */
+.heart {
+  position: fixed;
+  bottom: -20px;
+  font-size: 18px;
+  animation: floatUp linear forwards;
+  opacity:.7;
+}
+@keyframes floatUp {
+  to { transform: translateY(-110vh); opacity:0; }
+}
+
+/* card animation */
+.pop { animation: pop .5s ease-out; }
+@keyframes pop {
+  0%{transform:scale(.85);opacity:0}
+  100%{transform:scale(1);opacity:1}
+}
+</style>
+</head>
+
+<body class="min-h-screen flex items-center justify-center p-4 font-sans">
+
+<div id="app"
+ class="bg-white/95 rounded-3xl shadow-2xl w-full max-w-md p-6 text-center relative overflow-hidden pop">
+</div>
+
+<script>
+const app = document.getElementById("app");
+
+/* ---------- STORY STEPS ---------- */
+
+const steps = [
+
+{
+title:"Hey you 😊",
+text:"I made a tiny surprise page… just for my shifu.",
+btn:"Tap to continue"
+},
+
+{
+title:"Quick question 🤍",
+text:"Do you believe small moments can become big memories?",
+btn:"Maybe… continue"
+},
+
+{
+title:"Because…",
+text:"I think this could be one of those moments.",
+btn:"Okay… go on"
+},
+
+{
+title:"Will you be my Valentine? ❤️",
+proposal:true
+}
+
+];
+
+let stepIndex = 0;
+
+/* ---------- RENDER ---------- */
+
+function renderStep(){
+  const s = steps[stepIndex];
+
+  if(!s.proposal){
+    app.innerHTML = `
+      <div class="space-y-6 pop">
+        <h2 class="text-2xl font-bold text-pink-600">${s.title}</h2>
+        <p class="text-gray-700 text-lg">${s.text}</p>
+        <button onclick="nextStep()"
+          class="w-full py-4 text-lg bg-pink-500 text-white rounded-xl shadow active:scale-95">
+          ${s.btn}
+        </button>
+      </div>
+    `;
+  } else {
+    renderProposal();
+  }
+}
+
+function nextStep(){
+  stepIndex++;
+  renderStep();
+}
+
+/* ---------- PROPOSAL STEP ---------- */
+
+let escapeCount = 0;
+const noTexts = ["No 🙈","Nope 😳","Not clicking 😅","Still no 😜","Missed 😏"];
+
+function renderProposal(){
+  app.innerHTML = `
+    <div class="space-y-6">
+      <h2 class="text-2xl font-bold text-pink-600">
+        Will you be my Valentine? ❤️
+      </h2>
+
+      <div class="flex flex-col gap-4 mt-4">
+        <button id="yesBtn"
+          class="py-4 text-lg bg-green-500 text-white rounded-xl shadow active:scale-95">
+          Yes 💘
+        </button>
+
+        <button id="noBtn"
+          class="py-4 text-lg bg-red-500 text-white rounded-xl shadow absolute">
+          No 😈
+        </button>
+      </div>
+    </div>
+  `;
+
+  const yesBtn = document.getElementById("yesBtn");
+  const noBtn = document.getElementById("noBtn");
+
+  placeNo(noBtn);
+
+  function placeNo(btn){
+    btn.style.left = "20px";
+    btn.style.bottom = "20px";
+  }
+
+  function moveNo(btn){
+    const pad = 10;
+    const maxX = app.clientWidth - btn.offsetWidth - pad;
+    const maxY = app.clientHeight - btn.offsetHeight - pad;
+
+    btn.style.left = Math.random()*maxX + "px";
+    btn.style.top  = Math.random()*maxY + "px";
+
+    escapeCount++;
+    btn.textContent = noTexts[escapeCount % noTexts.length];
+    btn.style.transform = `scale(${Math.max(.6,1-escapeCount*.07)})`;
+  }
+
+  /* touch + mouse proximity */
+  document.addEventListener("pointermove", e=>{
+    const r = noBtn.getBoundingClientRect();
+    const d = Math.hypot(
+      e.clientX-(r.left+r.width/2),
+      e.clientY-(r.top+r.height/2)
+    );
+    if(d < 90) moveNo(noBtn);
+  });
+
+  noBtn.addEventListener("touchstart",()=>moveNo(noBtn));
+
+  yesBtn.onclick = celebrate;
+}
+
+/* ---------- CELEBRATION ---------- */
+
+function celebrate(){
+  launchConfetti();
+  app.innerHTML = `
+    <div class="space-y-6 pop">
+      <div class="text-5xl">💖</div>
+      <h2 class="text-2xl font-bold text-pink-600">
+        Best answer detected 🥰
+      </h2>
+      <img src="https://media.giphy.com/media/MDJ9IbxxvDUQM/giphy.gif"
+           class="w-48 mx-auto rounded-2xl shadow-xl">
+      <p class="text-pink-500 font-semibold">
+        This made my day ✨
+      </p>
+    </div>
+  `;
+}
+
+function launchConfetti(){
+  for(let i=0;i<90;i++){
+    const c=document.createElement("div");
+    c.style.position="fixed";
+    c.style.width="8px";
+    c.style.height="12px";
+    c.style.left=Math.random()*100+"vw";
+    c.style.top="-10px";
+    c.style.background=`hsl(${Math.random()*360},80%,60%)`;
+    c.style.transform=`rotate(${Math.random()*360}deg)`;
+    c.style.animation="fall 1.8s linear forwards";
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(),2000);
+  }
+}
+
+/* confetti fall */
+const style=document.createElement("style");
+style.innerHTML=`@keyframes fall{to{transform:translateY(110vh) rotate(720deg);opacity:0}}`;
+document.head.appendChild(style);
+
+/* floating hearts bg */
+function spawnHeart(){
+  const h=document.createElement("div");
+  h.className="heart";
+  h.style.left=Math.random()*100+"vw";
+  h.style.animationDuration=(4+Math.random()*4)+"s";
+  h.textContent=["❤️","💖","💕","💘"][Math.floor(Math.random()*4)];
+  document.body.appendChild(h);
+  setTimeout(()=>h.remove(),8000);
+}
+setInterval(spawnHeart,600);
+
+renderStep();
+</script>
+
+</body>
+</html>
