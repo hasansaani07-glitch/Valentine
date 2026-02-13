@@ -26,7 +26,7 @@ body{
 
 .pop{animation:pop .45s ease-out;}
 @keyframes pop{
-  0%{transform:scale(.9);opacity:0}
+  0%{transform:scale(.92);opacity:0}
   100%{transform:scale(1);opacity:1}
 }
 </style>
@@ -52,133 +52,161 @@ const steps=[
 ];
 
 let step=0;
-function next(){step++;render();}
 
 function render(){
   const s=steps[step];
   if(!s.proposal){
     app.innerHTML=`
-    <div class="space-y-5 pop">
-      <h2 class="text-xl sm:text-2xl font-bold text-pink-600">${s.title}</h2>
-      <p class="text-base sm:text-lg text-gray-700">${s.text}</p>
-      <button onclick="next()"
-       class="w-full py-4 bg-pink-500 text-white rounded-xl shadow active:scale-95">
-       ${s.btn}
-      </button>
-    </div>`;
+      <div class="space-y-5 pop">
+        <h2 class="text-xl sm:text-2xl font-bold text-pink-600">${s.title}</h2>
+        <p class="text-base sm:text-lg text-gray-700">${s.text}</p>
+        <button onclick="next()"
+          class="w-full py-4 text-base sm:text-lg
+          bg-pink-500 text-white rounded-xl shadow active:scale-95">
+          ${s.btn}
+        </button>
+      </div>`;
   } else proposal();
 }
+
+function next(){ step++; render(); }
 
 /* ---------- PROPOSAL ---------- */
 
 let escapes=0;
-const noTexts=["No 🙈","Nope 😳","Still no 😅","Missed 😜","Try again 😏"];
+const noTexts=["No 🙈","Nope 😳","Still no 😅","Missed 😜","Try again 😏","Almost 😬"];
 
 function proposal(){
-app.innerHTML=`
-<div class="space-y-5">
-  <h2 class="text-xl sm:text-2xl font-bold text-pink-600">
-    Will you be my Valentine? ❤️
-  </h2>
+  app.innerHTML=`
+    <div class="space-y-5">
+      <h2 class="text-xl sm:text-2xl font-bold text-pink-600">
+        Will you be my Valentine? ❤️
+      </h2>
 
-  <div id="zone" class="relative h-40 mt-2">
-    <button id="yesBtn"
-      class="w-full py-4 bg-green-500 text-white rounded-xl shadow active:scale-95">
-      Yes 💘
-    </button>
+      <div id="btnZone" class="relative h-40 mt-2">
+        <button id="yesBtn"
+          class="w-full py-4 text-base sm:text-lg
+          bg-green-500 text-white rounded-xl shadow active:scale-95">
+          Yes 💘
+        </button>
 
-    <button id="noBtn"
-      class="py-3 px-6 bg-red-500 text-white rounded-xl shadow absolute">
-      No 😈
-    </button>
-  </div>
-</div>`;
+        <button id="noBtn"
+          class="py-3 px-6 text-sm sm:text-base
+          bg-red-500 text-white rounded-xl shadow absolute">
+          No 😈
+        </button>
+      </div>
+    </div>`;
 
-const yes=document.getElementById("yesBtn");
-const no=document.getElementById("noBtn");
-const zone=document.getElementById("zone");
+  const yes=document.getElementById("yesBtn");
+  const no=document.getElementById("noBtn");
+  const zone=document.getElementById("btnZone");
 
-/* always-visible placement */
-function moveNo(){
-  const pad=8;
+  placeNo();
 
-  const maxX=zone.clientWidth-no.offsetWidth-pad;
-  const maxY=zone.clientHeight-no.offsetHeight-pad;
+  function placeNo(){
+    no.style.left="10px";
+    no.style.bottom="10px";
+    no.style.transform="scale(1)";
+  }
 
-  const x=Math.random()*maxX;
-  const y=Math.random()*maxY;
+  function moveNo(){
+    const pad=6;
 
-  no.style.left=x+"px";
-  no.style.top=y+"px";
+    const maxX=zone.clientWidth-no.offsetWidth-pad;
+    const maxY=zone.clientHeight-no.offsetHeight-pad;
 
-  escapes++;
-  no.textContent=noTexts[escapes%noTexts.length];
+    const x=Math.max(pad,Math.random()*maxX);
+    const y=Math.max(pad,Math.random()*maxY);
 
-  // SAFE SCALE — never disappears
-  const scale=Math.max(.85,1-escapes*.04);
-  no.style.transform=`scale(${scale}) rotate(${Math.random()*12-6}deg)`;
-}
+    no.style.left=x+"px";
+    no.style.top=y+"px";
 
-/* initial safe position */
-moveNo();
+    escapes++;
 
-/* pointer detection */
-document.addEventListener("pointermove",e=>{
-  const r=no.getBoundingClientRect();
-  const d=Math.hypot(
-    e.clientX-(r.left+r.width/2),
-    e.clientY-(r.top+r.height/2)
-  );
-  if(d<90) moveNo();
-});
+    if(escapes < 7){
+      no.textContent=noTexts[escapes%noTexts.length];
+    }
 
-no.addEventListener("touchstart",moveNo);
-yes.onclick=celebrate;
+    // never shrink below readable size
+    const scale=Math.max(.75,1-escapes*.04);
+    no.style.transform=`scale(${scale})`;
+  }
+
+  /* proximity escape */
+  document.addEventListener("pointermove",e=>{
+    if(escapes>=7) return;
+    const r=no.getBoundingClientRect();
+    const d=Math.hypot(
+      e.clientX-(r.left+r.width/2),
+      e.clientY-(r.top+r.height/2)
+    );
+    if(d<90) moveNo();
+  });
+
+  no.addEventListener("touchstart",()=>{
+    if(escapes<7) moveNo();
+  });
+
+  /* ---- FAKE NO → YES after 7 ---- */
+  no.addEventListener("click",()=>{
+    if(escapes>=7){
+      no.textContent="Fine… Yes 😄";
+      no.classList.remove("bg-red-500");
+      no.classList.add("bg-green-500");
+      setTimeout(celebrate,300);
+    }
+  });
+
+  yes.onclick=celebrate;
 }
 
 /* ---------- CELEBRATE ---------- */
 
 function celebrate(){
-confetti();
-app.innerHTML=`
-<div class="space-y-5 pop">
-  <div class="text-5xl">💖</div>
-  <h2 class="text-xl sm:text-2xl font-bold text-pink-600">
-    Best answer detected 🥰
-  </h2>
-  <img src="https://media.giphy.com/media/MDJ9IbxxvDUQM/giphy.gif"
-   class="w-44 sm:w-52 mx-auto rounded-2xl shadow-xl">
-</div>`;
+  confetti();
+  app.innerHTML=`
+    <div class="space-y-5 pop">
+      <div class="text-4xl sm:text-5xl">💖</div>
+      <h2 class="text-xl sm:text-2xl font-bold text-pink-600">
+        Correct answer unlocked 🥰
+      </h2>
+      <img src="https://media.giphy.com/media/MDJ9IbxxvDUQM/giphy.gif"
+        class="w-44 sm:w-52 mx-auto rounded-2xl shadow-xl">
+      <p class="text-pink-500 font-semibold">
+        That totally counts as a YES ✨
+      </p>
+    </div>`;
 }
 
 function confetti(){
-for(let i=0;i<80;i++){
-  const c=document.createElement("div");
-  c.style.position="fixed";
-  c.style.width="8px";
-  c.style.height="12px";
-  c.style.left=Math.random()*100+"vw";
-  c.style.top="-10px";
-  c.style.background=`hsl(${Math.random()*360},80%,60%)`;
-  c.style.animation="fall 1.8s linear forwards";
-  document.body.appendChild(c);
-  setTimeout(()=>c.remove(),2000);
-}
+  for(let i=0;i<80;i++){
+    const c=document.createElement("div");
+    c.style.position="fixed";
+    c.style.width="8px";
+    c.style.height="12px";
+    c.style.left=Math.random()*100+"vw";
+    c.style.top="-10px";
+    c.style.background=`hsl(${Math.random()*360},80%,60%)`;
+    c.style.animation="fall 1.8s linear forwards";
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(),2000);
+  }
 }
 
 const s=document.createElement("style");
 s.innerHTML="@keyframes fall{to{transform:translateY(110vh) rotate(720deg);opacity:0}}";
 document.head.appendChild(s);
 
-/* hearts bg */
+/* floating hearts */
 function heart(){
-const h=document.createElement("div");
-h.className="heart";
-h.style.left=Math.random()*100+"vw";
-h.style.animationDuration=(4+Math.random()*4)+"s";
-h.textContent=["❤️","💖","💕","💘"][Math.floor(Math.random()*4)];
-document.body.appendChild(h);
-setTimeout(()=>h.remove(),8000);
+  const h=document.createElement("div");
+  h.className="heart";
+  h.style.left=Math.random()*100+"vw";
+  h.style.animationDuration=(4+Math.random()*4)+"s";
+  h.textContent=["❤️","💖","💕","💘"][Math.floor(Math.random()*4)];
+  document.body.appendChild(h);
+  setTimeout(()=>h.remove(),8000);
 }
 setInterval(heart,650);
 
